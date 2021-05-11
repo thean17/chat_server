@@ -5,9 +5,7 @@ import { v4 as uuid } from 'uuid';
 import Room, { RoomType } from './model/room';
 import RoomMember from './model/roomMember';
 
-const connectDatabase = async () => {
-	await mongoose.connect(Configuration.mongo.connectionURL);
-
+const populateDummyData = async () => {
 	const users = [
 		{
 			playerName: 'thean1',
@@ -62,13 +60,22 @@ const connectDatabase = async () => {
 					members.map((member) =>
 						RoomMember.create({
 							roomId: room.roomId,
-							playerId: member._id,
+							room: room._id,
+							player: member._id,
 						})
 					)
 				);
 			});
 		});
 	}
+};
+
+const connectDatabase = async () => {
+	await mongoose.connect(Configuration.mongo.connectionURL, {
+		dbName: Configuration.mongo.dbName,
+	});
+
+	await populateDummyData();
 };
 
 export default connectDatabase;
