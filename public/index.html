@@ -1,0 +1,202 @@
+<html>
+	<head>
+		<title>Express</title>
+		<link rel="stylesheet" href="/stylesheets/style.css" />
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+			crossorigin="anonymous"
+		/>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+			crossorigin="anonymous"
+		></script>
+		<script
+			src="https://cdn.socket.io/3.1.3/socket.io.min.js"
+			integrity="sha384-cPwlPLvBTa3sKAgddT6krw0cJat7egBga3DJepJyrLl4Q9/5WLra3rrnMcyTyOnh"
+			crossorigin="anonymous"
+		></script>
+		<script>
+			$(document).ready(function () {
+				window.groupMessages = {};
+				window.messages = [];
+
+				window.socket = io();
+				window.socket.on('connect', () => {});
+				window.socket.on('disconnect', () => {});
+				window.socket.on('message', (from, message) => {
+					window.messages.push({
+						from,
+						message,
+					});
+
+					clearSelectedGroup();
+					updateMessages(messages);
+				});
+
+				window.socket.on('set_groups', (groups) => {
+					$('#groups').empty();
+
+					groups.forEach((group) => {
+						var listItem = $('<a></a>')
+							.addClass('list-group-item list-group-item-action group-button')
+							.attr('href', '#')
+							.text(group.name)
+							.click(function () {
+								var currentActive = $(this).hasClass('active');
+
+								clearSelectedGroup();
+
+								if (!currentActive) {
+									$(this).addClass('active');
+
+									window.socket.emit('join_group', group.name);
+								}
+							});
+
+						$('#groups').append(listItem);
+					});
+				});
+
+				window.socket.on('joined_group', (groupName) => {
+					window.socket.on(
+						`receive_group_message#${groupName}`,
+						(from, message) => {
+              console.log('receive_group_message: ', from, message);
+							if (window.groupMessages[groupName]) {
+								window.groupMessages[groupName].push({
+									from,
+									message,
+								});
+							} else {
+								window.groupMessages[groupName] = [
+									{
+										from,
+										message,
+									},
+								];
+							}
+
+              updateMessages(groupMessages[groupName]);
+						}
+					);
+					// $(`.group-button:contains(${groupName})`).append(
+					// 	$('<span></span>')
+					// 		.addClass('badge badge-primary badge-pill')
+					// 		.text('Joined')
+					// );
+				});
+
+				window.socket.emit('get_groups');
+			});
+
+			function clearSelectedGroup() {
+				$('.group-button').removeClass('active');
+			}
+
+			function updateMessages(messages) {
+				$('#messages').empty();
+
+				messages.forEach((message) => {
+					var listItem = $('<li></li>')
+						.addClass('list-group-item')
+						.text(message.from + ': ' + message.message);
+
+					$('#messages').append(listItem);
+				});
+			}
+
+			function getActiveGroupName() {
+				var group = $('.group-button.active');
+
+				return group ? group.text() : null;
+			}
+
+			function setUsername() {
+				window.socket.emit('set_username', $('#username').val());
+			}
+
+			function sendMessage() {
+				var groupName = getActiveGroupName();
+
+				var message = $('#message').val();
+
+				if (!!groupName) {
+          console.log('sendMessage', groupName, message);
+					window.socket.emit('send_group_message', groupName, message);
+				} else {
+					var to = $('#to').val();
+
+					window.socket.emit('message', to, message);
+				}
+			}
+		</script>
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col">
+					<p class="h6">Groups</p>
+					<ul id="groups" class="list-group"></ul>
+				</div>
+				<div class="col">
+					<div class="input-group mb-3">
+						<input
+							id="username"
+							name="username"
+							type="text"
+							class="form-control"
+							placeholder="Your username"
+							aria-label="Your username"
+							aria-describedby="basic-addon2"
+						/>
+						<div class="input-group-append">
+							<button
+								class="btn btn-outline-secondary"
+								type="button"
+								onclick="setUsername()"
+							>
+								Set Username
+							</button>
+						</div>
+					</div>
+					<div class="input-group">
+						<div class="input-group-prepend">
+							<span class="input-group-text">To & Message</span>
+						</div>
+						<input
+							id="to"
+							name="to"
+							type="text"
+							aria-label="To"
+							class="form-control"
+						/>
+						<input
+							id="message"
+							name="message"
+							type="text"
+							aria-label="Message"
+							class="form-control"
+						/>
+						<div class="input-group-append">
+							<button
+								class="btn btn-outline-secondary"
+								type="button"
+								onclick="sendMessage()"
+							>
+								Send Message
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="col">
+					<ul id="messages" class="list-group"></ul>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

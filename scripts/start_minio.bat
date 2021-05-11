@@ -1,0 +1,1 @@
+docker run -d --name socket_chat_minio -p 9000:9000 minio/minio server /data
