@@ -5,6 +5,7 @@ const PlayerSchema = new Schema({
 	playerId: {
 		type: Schema.Types.Number,
 		required: true,
+		unique: true
 	},
 	playerName: {
 		type: Schema.Types.String,
