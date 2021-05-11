@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import autoIncrement from 'mongoose-auto-increment';
 
 export const RoomType = {
 	Private: 1,
@@ -6,10 +7,15 @@ export const RoomType = {
 };
 
 const RoomSchema = new Schema({
+	uid: {
+		type: Schema.Types.Number,
+		required: true,
+		unique: true,
+	},
 	roomId: {
 		type: Schema.Types.String,
 		required: true,
-    index: true,
+		index: true,
 	},
 	type: {
 		type: Schema.Types.Number,
@@ -25,6 +31,14 @@ const RoomSchema = new Schema({
 		required: true,
 		default: Date.now,
 	},
+});
+
+autoIncrement.initialize(mongoose.connection);
+RoomSchema.plugin(autoIncrement.plugin, {
+	model: 'Room',
+	field: 'uid',
+	startAt: 10000,
+	incrementBy: 1,
 });
 
 const Room = mongoose.model('Room', RoomSchema);

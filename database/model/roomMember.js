@@ -1,11 +1,16 @@
 import mongoose, { Schema } from 'mongoose';
 
 const RoomMemberSchema = new Schema({
+	room: {
+		type: Schema.Types.ObjectId,
+		required: true,
+		ref: 'Room',
+	},
 	roomId: {
 		type: Schema.Types.String,
 		required: true,
 	},
-	playerId: {
+	player: {
 		type: Schema.Types.ObjectId,
 		required: true,
 		ref: 'Player',
@@ -16,6 +21,8 @@ const RoomMemberSchema = new Schema({
 		default: Date.now,
 	},
 });
+
+RoomMemberSchema.index({ room: 1, player: 1 }, { unique: true });
 
 const RoomMember = mongoose.model('RoomMember', RoomMemberSchema);
 

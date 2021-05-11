@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import autoIncrement from 'mongoose-auto-increment';
 
 export const MessageType = {
 	Text: 1,
@@ -7,6 +8,16 @@ export const MessageType = {
 };
 
 const MessageSchema = new Schema({
+	uid: {
+		type: Schema.Types.Number,
+		required: true,
+		unique: true,
+	},
+	player: {
+		type: Schema.Types.ObjectId,
+		required: true,
+		ref: 'Player',
+	},
 	playerId: {
 		type: Schema.Types.Number,
 		required: true,
@@ -14,6 +25,11 @@ const MessageSchema = new Schema({
 	playerName: {
 		type: Schema.Types.String,
 		required: true,
+	},
+	room: {
+		type: Schema.Types.ObjectId,
+		required: true,
+		ref: 'Room',
 	},
 	roomId: {
 		type: Schema.Types.String,
@@ -41,6 +57,14 @@ const MessageSchema = new Schema({
 	filePath: {
 		type: Schema.Types.String,
 	},
+});
+
+autoIncrement.initialize(mongoose.connection);
+MessageSchema.plugin(autoIncrement.plugin, {
+	model: 'Message',
+	field: 'uid',
+	startAt: 10000,
+	incrementBy: 1,
 });
 
 const Message = mongoose.model('Message', MessageSchema);
