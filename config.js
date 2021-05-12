@@ -4,7 +4,7 @@ const Configuration = {
 		dbName: 'game_app_chat',
 	},
 	minio: {
-		endPoint: '127.0.0.1',
+		endPoint: '192.168.0.136',
 		port: 9000,
 		accessKey: 'minioadmin',
 		secretKey: 'minioadmin',
