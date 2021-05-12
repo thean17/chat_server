@@ -59,6 +59,7 @@ router.get('/getAllMessages/:id', async function (req, res, next) {
 		const messages = await Message.find({
 			room: room._id,
 		})
+			.sort('-_id')
 			.populate('player')
 			.then((messages) =>
 				messages.map((message) => {
