@@ -3,6 +3,7 @@ import Message from '../database/model/message';
 import Room from '../database/model/room';
 import RoomMember from '../database/model/roomMember';
 import Player from '../database/model/user';
+import minio from '../minio';
 
 const router = express.Router();
 
@@ -62,22 +63,38 @@ router.get('/getAllMessages/:id', async function (req, res, next) {
 			.sort('-_id')
 			.populate('player')
 			.then((messages) =>
-				messages.map((message) => {
-					return {
-						id: message.uid,
-						message: message.content,
-						dateTime: message.createdAt,
-						sender: {
-							Id: message.player.playerName,
-							UserName: message.player.playerName,
-							Name: message.player.playerName,
-							AvatarFileName:
-								'https://www.thewrap.com/wp-content/uploads/2021/03/Invincible.jpeg',
-							IsBlackList: false,
-							IsFriend: false,
-						},
-					};
-				})
+				Promise.all(
+					messages.map(async (message) => {
+						const image = message.filePath
+							? await (async () => {
+									let paths = message.filePath.split('/');
+									if (paths[0] === '') paths = paths.slice(1);
+									const bucketName = paths[0];
+									
+									return await minio().presignedGetObject(
+										bucketName,
+										paths.slice(1).join('/')
+									);
+							  })()
+							: null;
+
+						return {
+							id: message.uid,
+							message: message.content,
+							dateTime: message.createdAt,
+							image,
+							sender: {
+								Id: message.player.playerName,
+								UserName: message.player.playerName,
+								Name: message.player.playerName,
+								AvatarFileName:
+									'https://www.thewrap.com/wp-content/uploads/2021/03/Invincible.jpeg',
+								IsBlackList: false,
+								IsFriend: false,
+							},
+						};
+					})
+				)
 			);
 
 		res.json(messages);
