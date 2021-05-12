@@ -10,6 +10,7 @@
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.1",
+    "file-type": "^16.4.0",
     "minio": "^7.0.18",
     "mongoose": "^5.12.7",
     "mongoose-auto-increment": "^5.0.1",
