@@ -98,23 +98,34 @@ export default function (server) {
 						room: room._id,
 						roomId: room.roomId,
 						type,
-						content: type === MessageType.Image ? 'image' : message,
+						content:
+							type === MessageType.Image
+								? 'image'
+								: type === MessageType.Voice
+								? 'voice'
+								: message,
 						createdBy: player.playerId,
 						filePath,
 					}).then(async (doc) => {
-						const image =
-							doc.filePath !== null
-								? await minio().presignedGetObject(
-										doc.filePath.split('/')[0],
-										doc.filePath.split('/').slice(1).join('/')
-								  )
-								: null;
+						const filePath = doc.filePath
+							? await (async () => {
+									let paths = doc.filePath.split('/');
+									if (paths[0] === '') paths = paths.slice(1);
+									const bucketName = paths[0];
+
+									return await minio().presignedGetObject(
+										bucketName,
+										paths.slice(1).join('/')
+									);
+							  })()
+							: null;
 
 						return {
 							id: doc.uid,
 							message: doc.content,
 							dateTime: doc.createdAt,
-							image,
+							type: doc.type,
+							filePath,
 							sender: {
 								Id: player.playerName,
 								UserName: player.playerName,

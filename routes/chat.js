@@ -65,7 +65,7 @@ router.get('/getAllMessages/:id', async function (req, res, next) {
 			.then((messages) =>
 				Promise.all(
 					messages.map(async (message) => {
-						const image = message.filePath
+						const filePath = message.filePath
 							? await (async () => {
 									let paths = message.filePath.split('/');
 									if (paths[0] === '') paths = paths.slice(1);
@@ -82,7 +82,8 @@ router.get('/getAllMessages/:id', async function (req, res, next) {
 							id: message.uid,
 							message: message.content,
 							dateTime: message.createdAt,
-							image,
+							type: message.type,
+							filePath,
 							sender: {
 								Id: message.player.playerName,
 								UserName: message.player.playerName,
