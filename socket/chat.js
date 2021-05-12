@@ -1,9 +1,10 @@
+import FileType from 'file-type';
 import Message, { MessageType } from '../database/model/message';
-import Player from '../database/model/user';
 import Room from '../database/model/room';
 import RoomMember from '../database/model/roomMember';
-import fs from 'fs';
-import FileType from 'file-type';
+import Player from '../database/model/user';
+import minio from '../minio';
+import { v4 as uuid } from 'uuid';
 
 /**
  *
@@ -73,9 +74,17 @@ export default function (server) {
 						message,
 						type,
 					});
-					if (type === MessageType.Image) {
+
+					let filePath = null;
+					if ([MessageType.Image, MessageType.Voice].includes(type)) {
 						const file = Buffer.from(message);
 						const fileType = await FileType.fromBuffer(file);
+
+						const objectName = `${id}/${uuid()}.${fileType.ext}`;
+
+						await minio().putObject('chat', objectName, file);
+
+						filePath = '/chat/' + objectName;
 					}
 
 					const [room, player] = await Promise.all([
@@ -91,20 +100,32 @@ export default function (server) {
 						type,
 						content: type === MessageType.Image ? 'image' : message,
 						createdBy: player.playerId,
-					}).then((doc) => ({
-						id: doc.uid,
-						message: doc.content,
-						dateTime: doc.createdAt,
-						sender: {
-							Id: player.playerName,
-							UserName: player.playerName,
-							Name: player.playerName,
-							AvatarFileName:
-								'https://www.thewrap.com/wp-content/uploads/2021/03/Invincible.jpeg',
-							IsBlackList: false,
-							IsFriend: false,
-						},
-					}));
+						filePath,
+					}).then(async (doc) => {
+						const image =
+							doc.filePath !== null
+								? await minio().presignedGetObject(
+										doc.filePath.split('/')[0],
+										doc.filePath.split('/').slice(1).join('/')
+								  )
+								: null;
+
+						return {
+							id: doc.uid,
+							message: doc.content,
+							dateTime: doc.createdAt,
+							image,
+							sender: {
+								Id: player.playerName,
+								UserName: player.playerName,
+								Name: player.playerName,
+								AvatarFileName:
+									'https://www.thewrap.com/wp-content/uploads/2021/03/Invincible.jpeg',
+								IsBlackList: false,
+								IsFriend: false,
+							},
+						};
+					});
 
 					socket.emit('receive_message_from_room', msg, type);
 					socket.to(id).emit('receive_message_from_room', msg, type);
