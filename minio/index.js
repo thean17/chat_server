@@ -2,21 +2,38 @@ import { Client } from 'minio';
 import Configuration from '../config';
 
 /**
+ *
+ * @param {Client} minio
+ */
+const makeBuckets = async (minio) => {
+	const bucketExists = await minio.bucketExists('chat');
+
+	if (!bucketExists) {
+		await minio.makeBucket('chat', 'my_region');
+	}
+};
+
+/**
  * @type {Client}
  */
-let minio;
+let _minio = null;
 
 export const connectMinio = () => {
-	if (!!minio) return minio;
+	if (_minio) return minio;
 
-	minio = new Client({
+	_minio = new Client({
 		endPoint: Configuration.minio.endPoint,
 		port: Configuration.minio.port,
 		accessKey: Configuration.minio.accessKey,
 		secretKey: Configuration.minio.secretKey,
+		useSSL: false,
 	});
 
-	return minio;
+	makeBuckets(_minio);
+
+	return _minio;
 };
 
-export default minio;
+export default () => {
+	return _minio;
+};
