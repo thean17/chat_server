@@ -1,5 +1,7 @@
+import FileType from 'file-type';
 import { Document } from 'mongoose';
-import Message from '../database/model/message';
+import { v4 as uuid } from 'uuid';
+import Message, { MessageType } from '../database/model/message';
 import Room from '../database/model/room';
 import RoomMember from '../database/model/roomMember';
 import Player from '../database/model/user';
@@ -87,6 +89,47 @@ class ChatService {
 			.then((messages) => Promise.all(messages.map(this.mapMessage)));
 
 		return Result.createSuccess(messages);
+	}
+
+	async sendMessageToRoom(message, playerName, id) {
+		const [room, player] = await Promise.all([
+			Room.findOne({ uid: id }),
+			Player.findOne({ playerName }),
+		]);
+
+		return Message.create({
+			player: player._id,
+			playerId: player.playerId,
+			playerName: player.playerName,
+			room: room._id,
+			roomId: room.roomId,
+			type: message.type,
+			content:
+				message.type === MessageType.Image
+					? 'image'
+					: message.type === MessageType.Voice
+					? 'voice'
+					: message.message,
+			createdBy: player.playerId,
+			filePath: await this.uploadFile(id, message),
+		}).then(this.mapMessage);
+	}
+
+	async uploadFile(roomId, message) {
+		let filePath = null;
+
+		if ([MessageType.Image, MessageType.Voice].includes(message.type)) {
+			const file = Buffer.from(message.message);
+			const fileType = await FileType.fromBuffer(file);
+
+			const objectName = `${roomId}/${uuid()}.${fileType.ext}`;
+
+			await minio().putObject('chat', objectName, file);
+
+			filePath = '/chat/' + objectName;
+		}
+
+		return filePath;
 	}
 
 	async getFileURL(filePath) {
