@@ -1,8 +1,4 @@
-import { MessageType } from '../database/model/message';
-import Room from '../database/model/room';
-import RoomMember from '../database/model/roomMember';
-import Player from '../database/model/user';
-import ChatService from '../services/chatService';
+import axios from 'axios';
 
 /**
  *
@@ -21,6 +17,32 @@ export default function (server) {
 
 	const users = {};
 
+	const convertMessage = ({
+		channelId,
+		createdBy,
+		createdDt,
+		filePath,
+		messageContent,
+		messageType,
+		playerId,
+		playerName,
+		timeToken,
+	}) => {
+		return {
+			ChannelId: channelId,
+			CreatedBy: createdBy,
+			CreatedDt: createdDt,
+			FilePath: filePath,
+			IsRead: true,
+			MessageContent: messageContent,
+			MessageType: messageType,
+			PlayerId: playerId,
+			PlayerName: playerName,
+			TimeToken: timeToken,
+			TimeTokenDt: new Date(timeToken).toISOString(),
+		};
+	};
+
 	/**
 	 *
 	 * @param {import('socket.io').Socket} socket
@@ -30,60 +52,64 @@ export default function (server) {
 
 		users[socket.id] = { username: socket.id, connectedAt: new Date() };
 
-		socket.on('join_room', async (id) => {
-			console.log('join_room: ', id);
-
-			const [room, player] = await Promise.all([
-				Room.findOne({ uid: id }),
-				Player.findOne({ playerName: 'thean1' }),
-			]);
-			const roomMember = await RoomMember.findOne({
-				room: room._id,
-				// player: socket.handshake.headers.id,
-				player: player._id,
-			});
-
-			console.log({
-				room,
-				player,
-				roomMember,
-			});
-
-			if (roomMember) {
-				socket.join(room.uid);
-
-				// socket.emit('receive_message_from_room', 'Test', { something: 'Something' });
-
-				// socket
-				// 	.to(room.uid)
-				// 	.emit('receive_message_from_room', 'Test', { something: 'Something' });
-			} else {
-				socket.emit('join_room', null);
-			}
+		socket.on('join_room', async (channelId) => {
+			socket.join(channelId);
 		});
 
 		socket.on(
 			'send_message_to_room',
-			async (id, message, type = MessageType.Text) => {
-				if (socket.rooms.has(id)) {
-					console.log(socket.handshake.headers);
+			async (
+				channelId,
+				messageContent,
+				messageType = 'TEXT',
+				filePath,
+				playerId,
+				timeToken
+			) => {
+				console.log({
+					'socket.handshake.headers': socket.handshake.headers,
+					message: messageContent,
+					type: messageType,
+				});
+				if (socket.rooms.has(channelId)) {
+					const message = {
+						channelId,
+						filePath,
+						messageContent,
+						messageType,
+						playerId,
+						timeToken,
+					};
 
-					console.log({
+					await axios.post(
+						'https://machine-bo.azurewebsites.net/api/mapichat/LogChat',
 						message,
-						type,
-					});
-
-					const msg = await ChatService.sendMessageToRoom(
 						{
-							message,
-							type,
-						},
-						socket.handshake.headers.playername,
-						id
+							headers: {
+								authorization: socket.handshake.headers.authorization,
+								lang: socket.handshake.headers.lang,
+							},
+						}
 					);
 
-					socket.emit('receive_message_from_room', msg, type);
-					socket.to(id).emit('receive_message_from_room', msg, type);
+					console.log({
+						'socket.handshake.headers': socket.handshake.headers,
+						message: messageContent,
+						type: messageType,
+					});
+
+					socket.emit(
+						'receive_message_from_room',
+						convertMessage(message),
+						messageType
+					);
+					socket
+						.to(channelId)
+						.emit(
+							'receive_message_from_room',
+							convertMessage(message),
+							messageType
+						);
 				}
 			}
 		);
