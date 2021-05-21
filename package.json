@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "dev": "SET DEBUG=socket-io-chat:* & yarn nodemon --exec babel-node ./bin/www"
+    "dev": "SET DEBUG=socket-io-chat:* & yarn nodemon --exec babel-node ./bin/www",
+    "dev-linux": "DEBUG=socket-io-chat:* & ./node_modules/.bin/nodemon --exec babel-node ./bin/www"
   },
   "dependencies": {
     "axios": "^0.21.1",
