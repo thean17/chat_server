@@ -1,4 +1,5 @@
 import axios from 'axios';
+import FormData from 'form-data';
 
 /**
  *
@@ -64,52 +65,82 @@ export default function (server) {
 				messageType = 'TEXT',
 				filePath,
 				playerId,
-				timeToken
+				timeToken,
+				filename
 			) => {
-				console.log({
-					'socket.handshake.headers': socket.handshake.headers,
-					message: messageContent,
-					type: messageType,
-				});
-				if (socket.rooms.has(channelId)) {
-					const message = {
-						channelId,
-						filePath,
-						messageContent,
-						messageType,
-						playerId,
-						timeToken,
-					};
-
-					await axios.post(
-						'https://machine-bo.azurewebsites.net/api/mapichat/LogChat',
-						message,
-						{
-							headers: {
-								authorization: socket.handshake.headers.authorization,
-								lang: socket.handshake.headers.lang,
-							},
-						}
-					);
-
+				try {
 					console.log({
 						'socket.handshake.headers': socket.handshake.headers,
 						message: messageContent,
 						type: messageType,
+						filename,
 					});
+					if (socket.rooms.has(channelId)) {
+						const isText = messageType === 'TEXT';
+						let data = {
+							channelId,
+							filePath,
+							messageContent,
+							messageType,
+							playerId,
+							timeToken,
+						};
 
-					socket.emit(
-						'receive_message_from_room',
-						convertMessage(message),
-						messageType
-					);
-					socket
-						.to(channelId)
-						.emit(
+						if (!isText) {
+							const form = new FormData();
+
+							for (var key in data) {
+								if (key !== 'messageContent') {
+									form.append(key, data[key]);
+								} else {
+									form.append('file0', Buffer.from(data[key]), { filename });
+									form.append('messageContent', '');
+								}
+							}
+
+							data = form;
+						}
+
+						const message = await axios.post(
+							`https://machine-bo.azurewebsites.net/api/mapichat/${
+								isText ? 'LogChat' : 'LogFile'
+							}`,
+							data,
+							{
+								headers: {
+									authorization: socket.handshake.headers.authorization,
+									lang: socket.handshake.headers.lang,
+									...(!isText
+										? {
+												'Content-Type': `multipart/form-data; boundary=${data.getBoundary()}`,
+										  }
+										: {}),
+								},
+							}
+						);
+
+						socket.emit(
 							'receive_message_from_room',
-							convertMessage(message),
+							convertMessage(message.data),
 							messageType
 						);
+						socket
+							.to(channelId)
+							.emit(
+								'receive_message_from_room',
+								convertMessage(message.data),
+								messageType
+							);
+					} else {
+						console.log('room not found');
+					}
+				} catch (error) {
+					console.error('send_message_to_room error: ');
+					if (error.isAxiosError) {
+						console.error(error.response);
+					} else {
+						console.error(error);
+					}
 				}
 			}
 		);
