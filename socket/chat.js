@@ -1,5 +1,6 @@
 import axios from 'axios';
 import FormData from 'form-data';
+import logger, { debug } from '../helper/logger';
 
 /**
  *
@@ -49,7 +50,7 @@ export default function (server) {
 	 * @param {import('socket.io').Socket} socket
 	 */
 	const handleConnection = (socket) => {
-		console.log('new connection');
+		debug('new connection: ', socket.id);
 
 		users[socket.id] = { username: socket.id, connectedAt: new Date() };
 
@@ -69,7 +70,7 @@ export default function (server) {
 				filename
 			) => {
 				try {
-					console.log({
+					debug('send_message_to_room', {
 						'socket.handshake.headers': socket.handshake.headers,
 						message: messageContent,
 						type: messageType,
@@ -132,14 +133,14 @@ export default function (server) {
 								messageType
 							);
 					} else {
-						console.log('room not found');
+						debug('send_message_to_room: room not found');
 					}
 				} catch (error) {
-					console.error('send_message_to_room error: ');
+					logger.error('send_message_to_room error: ');
 					if (error.isAxiosError) {
-						console.error(error.response);
+						logger.error(error.response);
 					} else {
-						console.error(error);
+						logger.error(error);
 					}
 				}
 			}
@@ -174,7 +175,10 @@ export default function (server) {
 	io.on('connection', handleConnection);
 
 	io.on('disconnect', (reason) => {
-		console.log('disconnected: ', reason);
+		debug('disconnected: ', {
+			'socket.id': socket.id,
+			reason,
+		});
 
 		delete users[socket.id];
 	});
