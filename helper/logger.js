@@ -27,13 +27,14 @@ const filename =
 
 log4js.configure({
 	appenders: {
-		'socket-io-chat:server': {
+		console: { type: 'console' },
+		file: {
 			type: 'file',
 			filename: `logs/${filename}.log`,
 		},
 	},
 	categories: {
-		default: { appenders: ['socket-io-chat:server'], level: 'debug' },
+		default: { appenders: ['file', 'console'], level: 'debug' },
 	},
 });
 
