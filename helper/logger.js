@@ -1,10 +1,35 @@
 import log4js from 'log4js';
 
+const date = new Date();
+const components = [
+	date.getFullYear(),
+	date.getMonth(),
+	date.getDay(),
+	date.getHours(),
+	date.getMinutes(),
+	date.getSeconds(),
+	date.getMilliseconds(),
+];
+
+const filename =
+	components[0] +
+	components
+		.slice(1, 3)
+		.map((c) => c.toString().padStart(2, '0'))
+		.join('') +
+	'_' +
+	components
+		.slice(3, 6)
+		.map((c) => c.toString().padStart(2, '0'))
+		.join('') +
+	'_' +
+	components[6];
+
 log4js.configure({
 	appenders: {
 		'socket-io-chat:server': {
 			type: 'file',
-			filename: `logs/${Date.now()}.log`,
+			filename: `logs/${filename}.log`,
 		},
 	},
 	categories: {
