@@ -88,8 +88,5 @@ async function onListening() {
 	var addr = server.address();
 	var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
 
-	connectMinio();
-	await connectDatabase();
-
 	debug('Listening on ' + bind);
 }
