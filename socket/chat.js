@@ -67,6 +67,7 @@ export default function (server) {
 				filePath,
 				playerId,
 				timeToken,
+				playerName,
 				filename
 			) => {
 				try {
@@ -84,6 +85,7 @@ export default function (server) {
 							messageContent,
 							messageType,
 							playerId,
+							playerName,
 							timeToken,
 						};
 
