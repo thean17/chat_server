@@ -105,7 +105,7 @@ export default function (server) {
 						}
 
 						const message = await axios.post(
-							`https://machine-bo.azurewebsites.net/api/mapichat/${
+							`https://backend.bingotown88.com/api/mapichat/${
 								isText ? 'LogChat' : 'LogFile'
 							}`,
 							data,
