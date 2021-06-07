@@ -13,19 +13,15 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  deploy:
+  App-Deployment:
     runs-on: self-hosted
-    
-    strategy:
-      matrix:
-        node-version: [14.x]
         
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Use Node.js 14
         uses: actions/setup-node@v1
         with:
-            node-version: ${{ matrix.node-version }}
+            node-version: 14
       - run: npm install
       - run: npm run build --if-present
