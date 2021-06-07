@@ -14,8 +14,8 @@ var debug = require('../helper/logger').debug;
 var chat = require('../socket/chat').default;
 
 const options = {
-	key: fs.readFileSync(path.resolve('./key.pem')),
-	cert: fs.readFileSync(path.resolve('./cert.pem')),
+	key: fs.readFileSync(path.resolve('./bin/key.pem')),
+	cert: fs.readFileSync(path.resolve('./bin/cert.pem')),
 };
 
 /**
