@@ -122,6 +122,8 @@ export default function (server) {
 							}
 						);
 
+						debug('message received from api = ', message.data);
+
 						socket.emit(
 							'receive_message_from_room',
 							convertMessage(message.data),
