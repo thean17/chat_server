@@ -2,6 +2,11 @@ import axios from 'axios';
 import FormData from 'form-data';
 import logger, { debug } from '../helper/logger';
 
+const WhitelistURLs = [
+	'https://backend.bingotown88.com',
+	'https://mcpt-bo.azurewebsites.net',
+];
+
 /**
  *
  * @param {import('http').Server} server
@@ -104,10 +109,17 @@ export default function (server) {
 							data = form;
 						}
 
+						let url = 'https://backend.bingotown88.com';
+						if (
+							WhitelistURLs.some((u) =>
+								u.startsWith(socket.handshake.headers.target)
+							)
+						) {
+							url = socket.handshake.headers.target;
+						}
+
 						const message = await axios.post(
-							`https://backend.bingotown88.com/api/mapichat/${
-								isText ? 'LogChat' : 'LogFile'
-							}`,
+							`${url}/api/mapichat/${isText ? 'LogChat' : 'LogFile'}`,
 							data,
 							{
 								headers: {
